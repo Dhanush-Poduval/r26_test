@@ -17,7 +17,7 @@ double Odometry::distance(int x1, int y1, int x2, int y2)
 
 double Odometry::angle(int x1, int y1, int x2, int y2)
 {
-  return atan2(x2 - x1, y2 - y1) * 180.0 / M_PI;
+  return atan2((y2 - y1), (x2 - x1)) * 180.0 / M_PI;
 }
 
 MotionCommand Odometry::computeCommands(vector<pair<int, int>> &path)
@@ -38,11 +38,9 @@ MotionCommand Odometry::computeCommands(vector<pair<int, int>> &path)
 
     double current_angle = angle(x1, y1, x2, y2);
 
-    // Correct angle difference
     double delta = current_angle - prev_angle;
-    delta = fmod(delta + 180.0, 360.0) - 180.0; // minimal signed difference
+    delta = fmod(delta + 180.0, 360.0) - 180.0; // maps delta to [-180,180]
     res.angle_deg += fabs(delta);
-    prev_angle = current_angle;
   }
 
   return res;
