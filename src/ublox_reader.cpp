@@ -8,11 +8,11 @@
 #include <vector>
 
 using namespace std;
-
-static int NAV_POSLLH(uint8_t *buffer, classId *gps) {
-  memcpy(&gps->iTOW, buffer, 4);
-  memcpy(&gps->lon, buffer, 4);
-  memcpy(&gps->lat, buffer, 4);
+static int NAV_POSLLH(uint8_t *buffer, classId *gps)
+{
+  memcpy(&gps->iTOW, buffer + 0, 4); // first 4 bytes
+  memcpy(&gps->lon, buffer + 4, 4);  // next 4 bytes
+  memcpy(&gps->lat, buffer + 8, 4);  // next 4 bytes
   memcpy(&gps->height, buffer + 12, 4);
   memcpy(&gps->hMSL, buffer + 16, 4);
   memcpy(&gps->hAcc, buffer + 20, 4);
@@ -20,25 +20,25 @@ static int NAV_POSLLH(uint8_t *buffer, classId *gps) {
   return 0;
 }
 
-static vector<uint8_t> hexToBytes(const string &rawHex) {
+static vector<uint8_t> hexToBytes(const string &rawHex)
+{
   vector<uint8_t> bytes;
   stringstream ss(rawHex);
   string token;
-  while (ss >> token) {
+  while (ss >> token)
+  {
     bytes.push_back(static_cast<uint8_t>(stoul(token, nullptr, 16)));
   }
   return bytes;
 }
 
-int decodeUBX(uint8_t *buffer, classId *gps) {
-  // buffer points at class field
-  if (buffer[30] == 0x01 && buffer[32] == 0x02) { // Class = NAV, ID = POSLLH
-    return NAV_POSLLH(buffer + 4, gps);         // skip length
-  }
-  return 1;
+int decodeUBX(uint8_t *buffer, classId *gps)
+{
+  // skip first 4 bytes if needed, then decode directly
+  return NAV_POSLLH(buffer + 4, gps);
 }
-
-GPS gpsFromData(const classId &gps) {
+GPS gpsFromData(const classId &gps)
+{
   GPS out;
   out.lat = gps.lat * 1e-7;
   out.lon = gps.lon * 1e-7;
@@ -46,9 +46,11 @@ GPS gpsFromData(const classId &gps) {
   return out;
 }
 
-pair<GPS, GPS> readUbloxFile(const string &filename) {
+pair<GPS, GPS> readUbloxFile(const string &filename)
+{
   ifstream file(filename);
-  if (!file.is_open()) {
+  if (!file.is_open())
+  {
     cerr << "Error: cannot open file " << filename << endl;
     return {{0.0, 0.0}, {0.0, 0.0}};
   }
