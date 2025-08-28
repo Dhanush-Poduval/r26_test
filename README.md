@@ -32,5 +32,33 @@ Debugging: Linking errors in C++ for the pathplanner part slowed down developmen
 <h1>Flow of the project</h1>
 The main function calls the grid creating fucntion from gridmap.cpp and that converts the gps coordinates into a grid type layout than the ubslayout gives us the start point and the goal end point the pathfinder finds and creates the best path between the start endpoint and the goal and the odometry.cpp file calculates the time taken and the angles rotated by the bot about each point of the path 
 
+<h1>Implementation</h1>
+
+Path Planning (planning.cpp):
+
+Used A* search to find the best path from start to goal on a grid.
+
+Allowed diagonal moves too (8-connected grid).
+
+Used Chebyshev distance (max of row/column differences) as a guide to reach the goal faster.
+
+Kept track of the cost to reach each cell and the parent of each cell to reconstruct the path.
+
+Odometry (odometry.cpp):
+
+Calculates distance between each path point to find time taken using wheel radius and RPM.
+
+Calculates angle changes between path segments to find total rotation of the bot.
+
+Normalizes angles so turns are counted correctly.
+
+Testing:
+
+Printed the grid and path to check visually.
+
+Compared odometry outputs (time and angle) with expected results.
+
+Debugged angle and distance calculations to get outputs closer to expected.
+
 
 
