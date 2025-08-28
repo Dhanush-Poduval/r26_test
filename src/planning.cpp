@@ -3,53 +3,57 @@
 #include <vector>
 #include <map>
 #include <utility>
-#include <algorithm>
 #include <cmath>
+#include <algorithm>
 
 using namespace std;
 
-// Directions: up, down, left, right
+// Directions: 8-connected (up, down, left, right + diagonals)
 const vector<pair<int, int>> directions = {
-    {-1, 0}, {1, 0}, {0, -1}, {0, 1}};
+    {-1, 0}, {1, 0}, {0, -1}, {0, 1}, {-1, -1}, {-1, 1}, {1, -1}, {1, 1}};
 
-// Constructor
 Planner::Planner(const vector<vector<bool>> &grid) : grid(grid)
 {
   rows = grid.size();
   cols = grid[0].size();
 }
 
-// Check if cell is within bounds and not blocked
 bool Planner::isvalid(int x, int y) const
 {
   return (x >= 0 && x < rows && y >= 0 && y < cols && !grid[x][y]);
 }
 
-// Heuristic for A* (not used in BFS, but can be handy later)
+// Heuristic: Euclidean distance
 double Planner::heuristic(int x1, int y1, int x2, int y2) const
 {
   return sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
 }
 
-// BFS-based path planning
 vector<pair<int, int>> Planner::pathplanning(pair<int, int> start, pair<int, int> goal)
 {
-  vector<pair<int, int>> path;
-  vector<vector<bool>> visited(rows, vector<bool>(cols, false));
-  map<pair<int, int>, pair<int, int>> parent;
+  struct Node
+  {
+    int x, y;
+    double f; // total cost = g + h
+    bool operator>(const Node &other) const { return f > other.f; }
+  };
 
-  queue<pair<int, int>> q;
-  q.push(start);
-  visited[start.first][start.second] = true;
+  map<pair<int, int>, pair<int, int>> parent;
+  vector<vector<double>> gscore(rows, vector<double>(cols, 1e9));
+  priority_queue<Node, vector<Node>, greater<Node>> open;
+
+  gscore[start.first][start.second] = 0.0;
+  double h = heuristic(start.first, start.second, goal.first, goal.second);
+  open.push({start.first, start.second, h});
 
   bool found = false;
 
-  while (!q.empty())
+  while (!open.empty())
   {
-    auto current = q.front();
-    q.pop();
+    Node current = open.top();
+    open.pop();
 
-    if (current == goal)
+    if (make_pair(current.x, current.y) == goal)
     {
       found = true;
       break;
@@ -57,22 +61,31 @@ vector<pair<int, int>> Planner::pathplanning(pair<int, int> start, pair<int, int
 
     for (auto dir : directions)
     {
-      int nr = current.first + dir.first;
-      int nc = current.second + dir.second;
+      int nx = current.x + dir.first;
+      int ny = current.y + dir.second;
 
-      if (isvalid(nr, nc) && !visited[nr][nc])
+      if (!isvalid(nx, ny))
+        continue;
+
+      // Cost: Euclidean distance for diagonal or straight
+      double move_cost = sqrt(dir.first * dir.first + dir.second * dir.second);
+      double tentative_g = gscore[current.x][current.y] + move_cost;
+
+      if (tentative_g < gscore[nx][ny])
       {
-        visited[nr][nc] = true;
-        parent[{nr, nc}] = current;
-        q.push({nr, nc});
+        gscore[nx][ny] = tentative_g;
+        parent[{nx, ny}] = {current.x, current.y};
+        double f = tentative_g + heuristic(nx, ny, goal.first, goal.second);
+        open.push({nx, ny, f});
       }
     }
   }
 
+  vector<pair<int, int>> path;
   if (!found)
-    return path; // empty if no path
+    return path;
 
-  // Reconstruct path from goal -> start
+  // Reconstruct path
   pair<int, int> curr = goal;
   while (curr != start)
   {
@@ -80,7 +93,7 @@ vector<pair<int, int>> Planner::pathplanning(pair<int, int> start, pair<int, int
     curr = parent[curr];
   }
   path.push_back(start);
+  reverse(path.begin(), path.end());
 
-  reverse(path.begin(), path.end()); // start -> goal
   return path;
 }
