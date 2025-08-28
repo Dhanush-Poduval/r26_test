@@ -8,16 +8,18 @@
 
 using namespace std;
 
-// Directions: 8-connected (up, down, left, right + diagonals)
+// Directions for 8-connected movement (diagonals + axis-aligned)
 const vector<pair<int, int>> directions = {
     {-1, 0}, {1, 0}, {0, -1}, {0, 1}, {-1, -1}, {-1, 1}, {1, -1}, {1, 1}};
 
-Planner::Planner(const vector<vector<bool>> &grid) : grid(grid)
+// Constructor
+Planner::Planner(const vector<vector<bool>> &g) : grid(g)
 {
   rows = grid.size();
   cols = grid[0].size();
 }
 
+// Check if a cell is inside grid and free
 bool Planner::isvalid(int x, int y) const
 {
   return (x >= 0 && x < rows && y >= 0 && y < cols && !grid[x][y]);
@@ -29,12 +31,13 @@ double Planner::heuristic(int x1, int y1, int x2, int y2) const
   return sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
 }
 
+// Path planning with A* algorithm
 vector<pair<int, int>> Planner::pathplanning(pair<int, int> start, pair<int, int> goal)
 {
   struct Node
   {
     int x, y;
-    double f; // total cost = g + h
+    double f; // f = g + h
     bool operator>(const Node &other) const { return f > other.f; }
   };
 
@@ -43,8 +46,7 @@ vector<pair<int, int>> Planner::pathplanning(pair<int, int> start, pair<int, int
   priority_queue<Node, vector<Node>, greater<Node>> open;
 
   gscore[start.first][start.second] = 0.0;
-  double h = heuristic(start.first, start.second, goal.first, goal.second);
-  open.push({start.first, start.second, h});
+  open.push({start.first, start.second, heuristic(start.first, start.second, goal.first, goal.second)});
 
   bool found = false;
 
@@ -67,8 +69,7 @@ vector<pair<int, int>> Planner::pathplanning(pair<int, int> start, pair<int, int
       if (!isvalid(nx, ny))
         continue;
 
-      // Cost: Euclidean distance for diagonal or straight
-      double move_cost = sqrt(dir.first * dir.first + dir.second * dir.second);
+      double move_cost = (dir.first != 0 && dir.second != 0) ? 1.4142 : 1.0; // diagonal cost = sqrt(2)
       double tentative_g = gscore[current.x][current.y] + move_cost;
 
       if (tentative_g < gscore[nx][ny])
@@ -85,7 +86,7 @@ vector<pair<int, int>> Planner::pathplanning(pair<int, int> start, pair<int, int
   if (!found)
     return path;
 
-  // Reconstruct path
+  // Reconstruct path from goal to start
   pair<int, int> curr = goal;
   while (curr != start)
   {

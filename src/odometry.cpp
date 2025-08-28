@@ -15,9 +15,14 @@ double Odometry::distance(int x1, int y1, int x2, int y2)
   return sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
 }
 
-double Odometry::angle(int x1, int y1, int x2, int y2)
+double Odometry::angle(int row1, int col1, int row2, int col2)
 {
-  return atan2((y2 - y1), (x2 - x1)) * 180.0 / M_PI;
+  double dx = col2 - col1;
+  double dy = row1 - row2; // grid Y increases downward
+  double ang = atan2(dy, dx) * 180.0 / M_PI;
+  if (ang < 0)
+    ang += 360;
+  return ang;
 }
 
 MotionCommand Odometry::computeCommands(vector<pair<int, int>> &path)
@@ -37,10 +42,10 @@ MotionCommand Odometry::computeCommands(vector<pair<int, int>> &path)
     res.time_sec += dist / linear_vel;
 
     double current_angle = angle(x1, y1, x2, y2);
-
     double delta = current_angle - prev_angle;
-    delta = fmod(delta + 180.0, 360.0) - 180.0; // maps delta to [-180,180]
+    delta = fmod(delta + 180.0, 360.0) - 180.0; // normalize [-180,180]
     res.angle_deg += fabs(delta);
+    prev_angle = current_angle;
   }
 
   return res;
